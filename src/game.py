@@ -1,5 +1,7 @@
+from os import confstr_names
 import pygame
-from typing import List
+from typing import List, Tuple
+
 from settings import WINDOW_WIDTH, WINDOW_HEIGHT, FPS, Theme 
 from components.Node import Node
 
@@ -9,10 +11,12 @@ class Game:
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         self.clock = pygame.time.Clock()
         self.running = True
+        self.selected_node = None
         pygame.display.set_caption("LogicSim")
 
         # Game Vars
         self._nodes: List[Node] = []
+        self._connections: List[Tuple[Node, Node]] = []
 
     def run(self):
         while self.running:
@@ -27,23 +31,55 @@ class Game:
                 self.running = False
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1: # 1 for left click
                 x, y = event.pos
-                self.add_node(x, y)
+                self.selected_node = self.get_node_at_position(x, y)
+                if not self.selected_node:
+                    self.add_node(x, y)
+                else:
+                    self.selected_node.draggable = True
+            if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                if self.selected_node:
+                    self.selected_node.draggable = False
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 2:
+                x, y = event.pos
+                clicked_node = self.get_node_at_position(x, y)
+                if clicked_node:
+                    if not self.selected_node:
+                        self.selected_node = clicked_node
+                    else:
+                        if self.selected_node != clicked_node:
+                            connection = (self.selected_node, clicked_node)
+                            if connection not in self._connections and tuple(reversed(connection)) not in self._connections:
+                                self._connections.append((self.selected_node, clicked_node))
+                        self.selected_node = None
             if event.type == pygame.MOUSEBUTTONUP and event.button == 3: # 3 for right click
                 x, y = event.pos
                 node = self.get_node_at_position(x, y)
                 if node:
                     self._nodes.remove(node)
+                    self._connections = [conn for conn in self._connections if node not in conn]
+
+            if event.type == pygame.MOUSEMOTION and self.selected_node:
+                # if self.is_position_valid(self.selected_node, event.pos) and self.selected_node.draggable:
+                if self.selected_node.draggable:
+                    x, y = event.pos
+                    self.selected_node.rect.centerx = max(0, min(x, WINDOW_WIDTH))
+                    self.selected_node.rect.centery = max(0, min(y, WINDOW_HEIGHT))
+                # self.selected_node.text = f"{event.pos}"
 
     def _update(self):
         '''
         Game Logic is handled here
         '''
-        pass
+        # print(f"selected_node: {self.selected_node}")
 
     def _render(self):
         self.screen.fill(Theme.BACKGROUND)
+        for node1, node2 in self._connections:
+            pygame.draw.line(self.screen, Theme.WARNING, node1.rect.center, node2.rect.center, 2)
+
         for node in self._nodes:
-            node.draw(self.screen)
+            node.draw(self.screen, selected=(node == self.selected_node))
+
         pygame.display.update()
 
     def add_node(self, x, y):
@@ -59,4 +95,10 @@ class Game:
                 return node
         return None
 
+    def is_position_valid(self, node: Node, newPos):
+        newX, newY = newPos
+        nodeWidth, nodeHeight = node.rect.width, node.rect.height
+        if (newX - nodeWidth//2) > 0 and (newY - nodeHeight//2) > 0 and (newX + nodeWidth//2) < WINDOW_WIDTH and (newY + nodeHeight//2) < WINDOW_HEIGHT:
+            return True
+        return False
     
