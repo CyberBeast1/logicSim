@@ -1,8 +1,8 @@
 from pygame import Color
 
 # Game configuration
-WINDOW_WIDTH = 800
-WINDOW_HEIGHT = 600
+WINDOW_WIDTH = 900
+WINDOW_HEIGHT = 700
 FPS = 60
 BALL_SIZE = 100
 
@@ -15,6 +15,7 @@ class Theme:
     # Primary text and interactive elements
     TEXT_PRIMARY = Color("#D9E0EE")  # Light grayish white for high contrast text
     TEXT_SECONDARY = Color("#8E97A4")  # Muted gray for secondary text
+    TEXT_DARK = Color("#000000")
     BUTTON = Color("#1C658C")  # Rich dark blue for buttons
     BUTTON_HOVER = Color("#4A94C9")  # Lighter blue on hover
 
